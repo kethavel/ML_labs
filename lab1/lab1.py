@@ -72,10 +72,6 @@ def lab1_1(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
         gnb = GaussianNB()
         gnb.fit(data, target)
         y_pred = gnb.predict(test)
-        # print("Number of mislabeled points out of a total %d points : %d %f" %
-        #      (test.shape[0],
-        #       (testTarget != y_pred).sum(),
-        #       float((testTarget != y_pred).sum()) / float(test.shape[0])))
         listXPoints.append(testPercent)
         listYPoints.append(float((testTarget != y_pred).sum()) / float(test.shape[0]))
     plt.plot(listXPoints, listYPoints, scalex=False, scaley=False)
@@ -114,30 +110,14 @@ def lab1_2(featuresMinus1: np.ndarray, featuresPlus1: np.ndarray) -> None:
         (testTarget != prediction).sum(),
         float((testTarget != prediction).sum()) / float(test.shape[0])))
     # матрица ошибок
-    MatrixOfMistakes = metrics.confusion_matrix(testTarget, prediction)
-    print('Matrix of mistakes:')
-    print('_________________| True values         |')
-    print('Predicted values | class -1 | class +1 |')
-    print('class -1         | {:#8} | {:#8} |'.format(MatrixOfMistakes[0, 0], MatrixOfMistakes[1, 0]))
-    print('class 1          | {:#8} | {:#8} |'.format(MatrixOfMistakes[0, 1], MatrixOfMistakes[1, 1]))
-
-    # ROС и PR-кривые
-    # Для построения ROC-кривой, необходимо получить вероятности принадлежности объектов классу.
-    # Затем следует итеративно «сдвигать» порог принятия решения классификатором, начиная с 0 (принимать все
-    # объекты), и анализировать FPR с TPR такого классификатора, откладывая их значения на графике.
-    fpr, tpr, _ = metrics.roc_curve(testTarget, prediction)
-    lw = 2
-    plt.plot(fpr, tpr, color='darkorange',
-             lw=lw, label='ROC curve')
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic')
-    plt.legend(loc="lower right")
+    metrics.plot_confusion_matrix(gnb, test, testTarget)
     plt.show()
-
+    # ROС
+    metrics.plot_roc_curve(gnb, test, testTarget)
+    plt.show()
+    # PR
+    metrics.plot_precision_recall_curve(gnb, test, testTarget)
+    plt.show()
 
 
 if __name__ == '__main__':
