@@ -3,7 +3,6 @@ from sklearn.naive_bayes import GaussianNB
 import numpy as np
 from random import sample
 import matplotlib.pyplot as plt
-from typing import Literal
 
 
 def makeDataAndTarget(array: np.ndarray, dictionary: dict) -> (np.ndarray, np.ndarray):
@@ -127,12 +126,12 @@ if __name__ == '__main__':
                                                                                                 'x': 2,
                                                                                                 'o': 3,
                                                                                                 'b': 4})
-    # lab1_1(tick_tack_toe_data, tick_tack_toe_target, 'tic_tac_toe.txt')
+    lab1_1(tick_tack_toe_data, tick_tack_toe_target, 'tic_tac_toe.txt')
 
     spam_csv = np.loadtxt('data/spam.csv', delimiter=',', dtype=str)[1:, 1:]
     spam_data, spam_target = makeDataAndTarget(spam_csv, dictionary={'"spam"': 1,
                                                                      '"nonspam"': -1})
-    # lab1_1(spam_data, spam_target, 'spam.csv')
+    lab1_1(spam_data, spam_target, 'spam.csv')
 
     # Вариант	                        5
     # Матем. ожид. X1 (класс -1)	    14
@@ -148,5 +147,4 @@ if __name__ == '__main__':
     # Вывод в массив размером size 50, 2
     featuresClassMinus1 = np.random.normal(loc=(14, 10), scale=(4, 4), size=(50, 2))
     featuresClassPlus1 = np.random.normal(loc=(16, 10), scale=(1, 1), size=(50, 2))
-
     lab1_2(featuresClassMinus1, featuresClassPlus1)
