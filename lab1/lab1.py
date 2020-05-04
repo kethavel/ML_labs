@@ -1,3 +1,4 @@
+from typing import Tuple
 from sklearn import metrics
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -5,11 +6,12 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.svm import SVC
 
 
 def makeDataAndTarget(array: np.ndarray, dictionary: dict) -> (np.ndarray, np.ndarray):
-    """Заменяет значения в соответствии со словарем dictionary, выделяет последний столбец в target,
-    приводит значения к float
+    """Создает новый массив данных и классов, заменяет значения в соответствии со словарем dictionary,
+    выделяет последний столбец в target, приводит значения к float
 
     :param array: массив исходных данных
     :param dictionary: словарь, в соответствии с которым заменяются значения
@@ -161,7 +163,149 @@ def lab1_3(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
     unknownGlass = np.array([RI, Na, Mg, Al, Si, K, Ca, Ba, Fe], ndmin=2)
     prediction = classifier.predict(unknownGlass)
     print('Unknown glass is {0[0]} class. Accuracy: {1}'.format(prediction, accuracy))
-    return
+
+
+def lab1_4(dataTuple: Tuple[np.ndarray, ...]) -> None:
+    """
+    a.	Постройте алгоритм метода опорных векторов с линейным ядром. Визуализируйте разбиение пространства
+      признаков на области с помощью полученной модели. Выведите количество полученных опорных
+      векторов, а также матрицу ошибок классификации на обучающей и тестовой выборках.
+    b.	Постройте алгоритм метода опорных векторов с линейным ядром. Добейтесь нулевой ошибки сначала на обучающей
+      выборке, а затем на тестовой, путем изменения штрафного параметра. Выберите оптимальное значение данного параметра
+      и объясните свой выбор. Всегда ли нужно добиваться минимизации ошибки на обучающей выборке?
+    c.	Постройте алгоритм метода опорных векторов, используя различные ядра (линейное, полиномиальное степеней 1-5,
+      сигмоидальная функция, гауссово). Визуализируйте разбиение пространства признаков на области с помощью полученных
+      моделей. Сделайте выводы.
+    d.	Постройте алгоритм метода опорных векторов, используя различные ядра (полиномиальное степеней 1-5, сигмоидальная
+      функция, гауссово). Визуализируйте разбиение пространства признаков на области с помощью полученных моделей.
+      Сделайте выводы.
+    e.	Постройте алгоритм метода опорных векторов, используя различные ядра (полиномиальное степеней 1-5, сигмоидальная
+      функция, гауссово). Изменяя значение параметра ядра (гамма), продемонстрируйте эффект переобучения, выполните при
+      этом визуализацию разбиения пространства признаков на области.
+
+    :param dataTuple: Tuple из массивов данных для каждого пункта лабораторной в последовательности a, a_test, b, b_test
+    , c, c_test, d, d_test, e, e_test
+    """
+
+    def make_meshgrid(x, y, h=.02):
+        """Create a mesh of points to plot in
+
+        Parameters
+        ----------
+        x: data to base x-axis meshgrid on
+        y: data to base y-axis meshgrid on
+        h: stepsize for meshgrid, optional
+
+        Returns
+        -------
+        xx, yy : ndarray
+        """
+        x_min, x_max = x.min() - 1, x.max() + 1
+        y_min, y_max = y.min() - 1, y.max() + 1
+        xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                             np.arange(y_min, y_max, h))
+        return xx, yy
+
+    def plot_contours(clf, xx, yy, **params):
+        """Plot the decision boundaries for a classifier.
+
+        Parameters
+        ----------
+        :param clf: a classifier
+        :param xx: meshgrid ndarray
+        :param yy: meshgrid ndarray
+        :param params: dictionary of params to pass to contourf, optional
+        """
+        Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+        out = plt.contourf(xx, yy, Z, **params)
+        return out
+
+    def makePlotOfSVC(clf, X0, X1, y, title: str):
+        """Plot the decision boundaries for a classifier.
+
+                Parameters
+                ----------
+                :param clf: a classifier
+                :param X0: x0 coordinates
+                :param X1: x1 coordinates
+                :param y: classes of data
+                :param title: title of the plot
+        """
+        xx, yy = make_meshgrid(X0, X1)
+        plot_contours(clf, xx, yy,
+                      alpha=0.8)
+        plt.scatter(X0, X1, c=y, s=20, edgecolors='k')
+        plt.xlim(xx.min(), xx.max())
+        plt.ylim(yy.min(), yy.max())
+        plt.xlabel('Sepal length')
+        plt.ylabel('Sepal width')
+        plt.xticks(())
+        plt.yticks(())
+        plt.title(title)
+
+    if len(dataTuple) != 10:
+        raise ValueError('dataTuple should contain 10 elements:a, a_test, b, b_test, c, c_test, d, d_test, e, e_test')
+
+    dictConverter = {'red': 1, 'green': 2}
+
+    # пункт a
+    print('part a:')
+    x_train, y_train = makeDataAndTarget(dataTuple[0], dictConverter)
+    x_test, y_test = makeDataAndTarget(dataTuple[1], dictConverter)
+    dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+    targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+    classifier = SVC(kernel='linear')
+    classifier.fit(x_train, y_train)
+    y_predicted = classifier.predict(x_test)
+    accuracy = accuracy_score(y_test, y_predicted)
+    print('accuracy: {}'.format(accuracy))
+    makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset, 'SVC with linear kernel')
+    plt.show()
+    metrics.plot_confusion_matrix(classifier, x_test, y_test)
+    plt.title('Confusion matrix for test data')
+    plt.show()
+    metrics.plot_confusion_matrix(classifier, x_train, y_train)
+    plt.title('Confusion matrix for train data')
+    plt.show()
+    print('Number of support vectors for each class: {}'.format(classifier.n_support_))
+
+    # пункт b
+    print('part b:')
+    x_train, y_train = makeDataAndTarget(dataTuple[2], dictConverter)
+    x_test, y_test = makeDataAndTarget(dataTuple[3], dictConverter)
+    dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+    targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+
+    # добиваемся нулевой погрешности в тренировочных данных
+    C = 1000
+    classifier = SVC(kernel='linear', C=C)
+    classifier.fit(x_train, y_train)
+    y_predicted = classifier.predict(x_train)
+    accuracy = accuracy_score(y_train, y_predicted)
+    print('train data accuracy with C = {}: {}'.format(C, accuracy))
+    makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                  'SVC with linear kernel (C = {}, max train data accuracy)'.format(C))
+    plt.show()
+
+    # добиваемся нулевой погрешности в тестовых данных
+    C = 1
+    classifier = SVC(kernel='linear', C=C)
+    classifier.fit(x_train, y_train)
+    y_predicted = classifier.predict(x_train)
+    accuracy = accuracy_score(y_train, y_predicted)
+    print('test data accuracy with C = {}: {}'.format(C, accuracy))
+    makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                  'SVC with linear kernel (C = {}, max test data accuracy)'.format(C))
+    plt.show()
+
+    # пункт c
+    print('part c:')
+    x_train, y_train = makeDataAndTarget(dataTuple[4], dictConverter)
+    x_test, y_test = makeDataAndTarget(dataTuple[5], dictConverter)
+    dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+    targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+    kernels = ()
 
 
 if __name__ == '__main__':
@@ -208,5 +352,17 @@ if __name__ == '__main__':
                                                                       '"7"': 7,
                                                                       })
     print('Lab1.3:')
-    lab1_3(glassData, glassTarget, 'glass.csv')
+    # lab1_3(glassData, glassTarget, 'glass.csv')
 
+    svmdata = (np.loadtxt('data/svmdata_a.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_a_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_b.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_b_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_c.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_c_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_d.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_d_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_e.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
+               np.loadtxt('data/svmdata_e_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:])
+    lab1_4(svmdata)
+    print()
