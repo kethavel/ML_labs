@@ -165,7 +165,7 @@ def lab1_3(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
     print('Unknown glass is {0[0]} class. Accuracy: {1}'.format(prediction, accuracy))
 
 
-def lab1_4(dataTuple: Tuple[np.ndarray, ...]) -> None:
+def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
     """
     a.	Постройте алгоритм метода опорных векторов с линейным ядром. Визуализируйте разбиение пространства
       признаков на области с помощью полученной модели. Выведите количество полученных опорных
@@ -185,6 +185,8 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...]) -> None:
 
     :param dataTuple: Tuple из массивов данных для каждого пункта лабораторной в последовательности a, a_test, b, b_test
     , c, c_test, d, d_test, e, e_test
+    :param part: Та часть лабораторной, которую следует запустить. Доступны 'a', 'b', 'c', 'd', 'e'. Чтобы запустить
+    все и сразу - 'all'
     """
 
     def make_meshgrid(x, y, h=.02):
@@ -221,7 +223,7 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...]) -> None:
         out = plt.contourf(xx, yy, Z, **params)
         return out
 
-    def makePlotOfSVC(clf, X0, X1, y, title: str):
+    def makePlotOfSVC(clf, X0, X1, y, title: str, accuracy: [float, None] =None):
         """Plot the decision boundaries for a classifier.
 
                 Parameters
@@ -231,6 +233,7 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...]) -> None:
                 :param X1: x1 coordinates
                 :param y: classes of data
                 :param title: title of the plot
+                :param accuracy: accuracy. None if you don't want to print it in the plot
         """
         xx, yy = make_meshgrid(X0, X1)
         plot_contours(clf, xx, yy,
@@ -238,74 +241,171 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...]) -> None:
         plt.scatter(X0, X1, c=y, s=20, edgecolors='k')
         plt.xlim(xx.min(), xx.max())
         plt.ylim(yy.min(), yy.max())
-        plt.xlabel('Sepal length')
-        plt.ylabel('Sepal width')
+        plt.xlabel('X1')
+        plt.ylabel('X2')
         plt.xticks(())
         plt.yticks(())
-        plt.title(title)
+        if accuracy is None:
+            plt.title(title)
+        else:
+            plt.title(title + '\n accuracy = {}'.format(accuracy))
+
+    def partA() -> None:
+        """Пункт a"""
+        # пункт a
+        print('part a:')
+        x_train, y_train = makeDataAndTarget(dataTuple[0], dictConverter)
+        x_test, y_test = makeDataAndTarget(dataTuple[1], dictConverter)
+        dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+        targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+        classifier = SVC(kernel='linear')
+        classifier.fit(x_train, y_train)
+        y_predicted = classifier.predict(x_test)
+        accuracy = accuracy_score(y_test, y_predicted)
+        makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset, 'SVC with linear kernel', accuracy)
+        plt.show()
+        metrics.plot_confusion_matrix(classifier, x_test, y_test)
+        plt.title('Confusion matrix for test data')
+        plt.show()
+        metrics.plot_confusion_matrix(classifier, x_train, y_train)
+        plt.title('Confusion matrix for train data')
+        plt.show()
+        print('Number of support vectors for each class: {}'.format(classifier.n_support_))
+
+    def partB() -> None:
+        """Пункт b"""
+        # пункт b
+        print('part b:')
+        x_train, y_train = makeDataAndTarget(dataTuple[2], dictConverter)
+        x_test, y_test = makeDataAndTarget(dataTuple[3], dictConverter)
+        dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+        targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+
+        # добиваемся нулевой погрешности в тренировочных данных
+        # добиваемся нулевой погрешности в тестовых данных
+        Cs = (1, 1000)
+        for C in Cs:
+            classifier = SVC(kernel='linear', C=C)
+            classifier.fit(x_train, y_train)
+            y_predicted = classifier.predict(x_train)
+            # смотрим на тренировочные данные
+            trainAccuracy = accuracy_score(y_train, y_predicted)
+            y_predicted = classifier.predict(x_test)
+            # смотрим на тренировочные данные
+            testAccuracy = accuracy_score(y_test, y_predicted)
+            makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                          'SVC with linear kernel (C = {}). \n'
+                          'Accuracy for train data: {} , for test data {}'.format(C, trainAccuracy, testAccuracy), None)
+            plt.show()
+
+    def partC() -> None:
+        """Пункт c"""
+        # пункт c
+        print('part c:')
+        x_train, y_train = makeDataAndTarget(dataTuple[4], dictConverter)
+        x_test, y_test = makeDataAndTarget(dataTuple[5], dictConverter)
+        dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+        targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+        kernels = ('linear', 'sigmoid', 'rbf')
+        for kernel in kernels:
+            classifier = SVC(kernel=kernel)
+            classifier.fit(x_train, y_train)
+            y_predicted = classifier.predict(x_train)
+            accuracy = accuracy_score(y_train, y_predicted)
+            makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                          'SVC with {} kernel '.format(kernel), accuracy)
+            plt.show()
+
+        for degree in range(1, 6):
+            classifier = SVC(kernel='poly', degree=degree)
+            classifier.fit(x_train, y_train)
+            y_predicted = classifier.predict(x_train)
+            accuracy = accuracy_score(y_train, y_predicted)
+            makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                          'SVC with polynomial kernel (degree = {}) '.format(degree), accuracy)
+            plt.show()
+
+    def partD() -> None:
+        """Пункт d"""
+        # пункт d
+        print('part d:')
+        x_train, y_train = makeDataAndTarget(dataTuple[6], dictConverter)
+        x_test, y_test = makeDataAndTarget(dataTuple[7], dictConverter)
+        dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+        targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+        kernels = ('linear', 'sigmoid', 'rbf')
+        for kernel in kernels:
+            classifier = SVC(kernel=kernel)
+            classifier.fit(x_train, y_train)
+            y_predicted = classifier.predict(x_train)
+            accuracy = accuracy_score(y_train, y_predicted)
+            makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                          'SVC with {} kernel '.format(kernel), accuracy)
+            plt.show()
+
+        for degree in range(1, 6):
+            classifier = SVC(kernel='poly', degree=degree)
+            classifier.fit(x_train, y_train)
+            y_predicted = classifier.predict(x_train)
+            accuracy = accuracy_score(y_train, y_predicted)
+            makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                          'SVC with polynomial kernel (degree = {}) '.format(degree), accuracy)
+            plt.show()
+
+    def partE() -> None:
+        """Пункт e"""
+        # пункт e
+        print('part e:')
+        x_train, y_train = makeDataAndTarget(dataTuple[8], dictConverter)
+        x_test, y_test = makeDataAndTarget(dataTuple[9], dictConverter)
+        dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
+        targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
+        kernels = ('linear', 'sigmoid', 'rbf')
+        gammas = (0.1, 500)
+        for gamma in gammas:
+            for kernel in kernels:
+                classifier = SVC(kernel=kernel, gamma=gamma)
+                classifier.fit(x_train, y_train)
+                y_predicted = classifier.predict(x_train)
+                accuracy = accuracy_score(y_train, y_predicted)
+                makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                              'SVC with {} kernel (gamma = {})'.format(kernel, gamma), accuracy)
+                plt.show()
+
+            for degree in range(1, 6):
+                classifier = SVC(kernel='poly', degree=degree, gamma=gamma)
+                classifier.fit(x_train, y_train)
+                y_predicted = classifier.predict(x_train)
+                accuracy = accuracy_score(y_train, y_predicted)
+                makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                              'SVC with polynomial kernel (degree = {}, gamma = {}) '.format(degree, gamma), accuracy)
+                plt.show()
 
     if len(dataTuple) != 10:
         raise ValueError('dataTuple should contain 10 elements:a, a_test, b, b_test, c, c_test, d, d_test, e, e_test')
 
     dictConverter = {'red': 1, 'green': 2}
 
-    # пункт a
-    print('part a:')
-    x_train, y_train = makeDataAndTarget(dataTuple[0], dictConverter)
-    x_test, y_test = makeDataAndTarget(dataTuple[1], dictConverter)
-    dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
-    targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
-    classifier = SVC(kernel='linear')
-    classifier.fit(x_train, y_train)
-    y_predicted = classifier.predict(x_test)
-    accuracy = accuracy_score(y_test, y_predicted)
-    print('accuracy: {}'.format(accuracy))
-    makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset, 'SVC with linear kernel')
-    plt.show()
-    metrics.plot_confusion_matrix(classifier, x_test, y_test)
-    plt.title('Confusion matrix for test data')
-    plt.show()
-    metrics.plot_confusion_matrix(classifier, x_train, y_train)
-    plt.title('Confusion matrix for train data')
-    plt.show()
-    print('Number of support vectors for each class: {}'.format(classifier.n_support_))
-
-    # пункт b
-    print('part b:')
-    x_train, y_train = makeDataAndTarget(dataTuple[2], dictConverter)
-    x_test, y_test = makeDataAndTarget(dataTuple[3], dictConverter)
-    dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
-    targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
-
-    # добиваемся нулевой погрешности в тренировочных данных
-    C = 1000
-    classifier = SVC(kernel='linear', C=C)
-    classifier.fit(x_train, y_train)
-    y_predicted = classifier.predict(x_train)
-    accuracy = accuracy_score(y_train, y_predicted)
-    print('train data accuracy with C = {}: {}'.format(C, accuracy))
-    makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
-                  'SVC with linear kernel (C = {}, max train data accuracy)'.format(C))
-    plt.show()
-
-    # добиваемся нулевой погрешности в тестовых данных
-    C = 1
-    classifier = SVC(kernel='linear', C=C)
-    classifier.fit(x_train, y_train)
-    y_predicted = classifier.predict(x_train)
-    accuracy = accuracy_score(y_train, y_predicted)
-    print('test data accuracy with C = {}: {}'.format(C, accuracy))
-    makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
-                  'SVC with linear kernel (C = {}, max test data accuracy)'.format(C))
-    plt.show()
-
-    # пункт c
-    print('part c:')
-    x_train, y_train = makeDataAndTarget(dataTuple[4], dictConverter)
-    x_test, y_test = makeDataAndTarget(dataTuple[5], dictConverter)
-    dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
-    targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
-    kernels = ()
+    chosenPart = part.lower()
+    if chosenPart == 'all':
+        partA()
+        partB()
+        partC()
+        partD()
+        partE()
+    elif chosenPart == 'a':
+        partA()
+    elif chosenPart == 'b':
+        partB()
+    elif chosenPart == 'c':
+        partC()
+    elif chosenPart == 'd':
+        partD()
+    elif chosenPart == 'e':
+        partE()
+    else:
+        raise ValueError("This lab does not have part 4.{}. Parts a, b, c, d and e are available. To make all parts at "
+                         "one call use part='all'", chosenPart)
 
 
 if __name__ == '__main__':
@@ -364,5 +464,7 @@ if __name__ == '__main__':
                np.loadtxt('data/svmdata_d_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
                np.loadtxt('data/svmdata_e.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
                np.loadtxt('data/svmdata_e_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:])
-    lab1_4(svmdata)
-    print()
+    print('Lab1.4:')
+    # lab1_4(svmdata, part='all')
+
+    print('Lab5:')
