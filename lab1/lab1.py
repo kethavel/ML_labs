@@ -1,12 +1,12 @@
 from typing import Tuple
-from sklearn import metrics
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, plot_confusion_matrix, plot_roc_curve, plot_precision_recall_curve
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 
 
 def makeDataAndTarget(array: np.ndarray, dictionary: dict) -> (np.ndarray, np.ndarray):
@@ -79,7 +79,7 @@ def lab1_2(featuresMinus1: np.ndarray, featuresPlus1: np.ndarray) -> None:
 
     # строим классификатор
     dataset = np.concatenate((featuresPlus1, featuresMinus1))
-    targetDataset = np.array([1 for i in range(featuresPlus1.shape[0])] + [-1 for i in range(featuresMinus1.shape[0])])
+    targetDataset = np.array([1 for _ in range(featuresPlus1.shape[0])] + [-1 for _ in range(featuresMinus1.shape[0])])
     x_train, x_test, y_train, y_test = train_test_split(dataset, targetDataset, test_size=0.33)
     gnb = GaussianNB()
     gnb.fit(x_train, y_train)
@@ -88,15 +88,15 @@ def lab1_2(featuresMinus1: np.ndarray, featuresPlus1: np.ndarray) -> None:
     # точность
     print("accuracy = {}".format(accuracy_score(y_test, prediction)))
     # матрица ошибок
-    metrics.plot_confusion_matrix(gnb, x_test, y_test)
+    plot_confusion_matrix(gnb, x_test, y_test)
     plt.title('Confusion matrix')
     plt.show()
     # ROС
-    metrics.plot_roc_curve(gnb, x_test, y_test)
+    plot_roc_curve(gnb, x_test, y_test)
     plt.title('ROC curve')
     plt.show()
     # PR
-    metrics.plot_precision_recall_curve(gnb, x_test, y_test)
+    plot_precision_recall_curve(gnb, x_test, y_test)
     plt.title('PR curve')
     plt.show()
 
@@ -108,6 +108,10 @@ def lab1_3(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
     классификации.
     c.	Определите, к какому типу стекла относится экземпляр с характеристиками:
     RI =1.516 Na =11.7 Mg =1.01 Al =1.19 Si =72.59 K=0.43 Ca =11.44 Ba =0.02 Fe =0.1
+
+    :param dataset: даные для обучения
+    :param targetDataset: соответствующие классы
+    :param dataName: имя данных, с которыми работаем
     """
 
     # график зависимости точности от количества соседей
@@ -223,7 +227,7 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
         out = plt.contourf(xx, yy, Z, **params)
         return out
 
-    def makePlotOfSVC(clf, X0, X1, y, title: str, accuracy: [float, None] =None):
+    def makePlotOfSVC(clf, X0, X1, y, title: str, accuracy: [float, None] = None):
         """Plot the decision boundaries for a classifier.
 
                 Parameters
@@ -264,10 +268,10 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
         accuracy = accuracy_score(y_test, y_predicted)
         makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset, 'SVC with linear kernel', accuracy)
         plt.show()
-        metrics.plot_confusion_matrix(classifier, x_test, y_test)
+        plot_confusion_matrix(classifier, x_test, y_test)
         plt.title('Confusion matrix for test data')
         plt.show()
-        metrics.plot_confusion_matrix(classifier, x_train, y_train)
+        plot_confusion_matrix(classifier, x_train, y_train)
         plt.title('Confusion matrix for train data')
         plt.show()
         print('Number of support vectors for each class: {}'.format(classifier.n_support_))
@@ -404,11 +408,210 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
     elif chosenPart == 'e':
         partE()
     else:
-        raise ValueError("This lab does not have part 4.{}. Parts a, b, c, d and e are available. To make all parts at "
+        raise ValueError("This lab doesn't have part 4.{}. Parts a, b, c, d and e are available. To make all parts at "
                          "one call use part='all'", chosenPart)
 
 
+def lab1_5(datasets: Tuple[np.ndarray, np.ndarray], targetDatasets: Tuple[np.ndarray, np.ndarray],
+           part: str = 'all') -> None:
+    """
+    5.	Постройте классификаторы для различных данных на основе деревьев решений:
+    a.	Загрузите набор данных Glass
+    из файла glass.csv. Постройте дерево классификации для модели, предсказывающей тип (Type) по остальным признакам.
+    Визуализируйте результирующее дерево решения. Дайте интерпретацию полученным результатам. Является ли построенное
+    дерево избыточным? Исследуйте зависимость точности классификации от критерия расщепления, максимальной глубины
+    дерева и других параметров по вашему усмотрению.
+    b.	Загрузите набор данных spam7 из файла spam7.csv. Постройте
+    оптимальное, по вашему мнению, дерево классификации для параметра yesno. Объясните, как был осуществлён подбор
+    параметров. Визуализируйте результирующее дерево решения. Определите наиболее влияющие признаки. Оцените качество
+    классификации.
+
+    :param part: пункт лабораторной
+    :param datasets: даные для обучения
+    :param targetDatasets: соответствующие классы
+    """
+
+    def partA() -> None:
+        # пункт a
+        classifier = DecisionTreeClassifier()
+        x_train, x_test, y_train, y_test = train_test_split(datasets[0], targetDatasets[0], test_size=0.33)
+        classifier.fit(x_train, y_train)
+        y_predicted = classifier.predict(x_test)
+        accuracy = accuracy_score(y_test, y_predicted)
+        # вывод дерева
+        plot_tree(classifier)
+        plt.title('Tree classifier (accuracy = {})'.format(accuracy))
+        plt.show()
+        # зависимость точности от параметров
+        # критерий расщепления
+        criteria = ('gini', 'entropy')
+        accuracies = []
+        for criterion in criteria:
+            classifier = DecisionTreeClassifier(criterion=criterion)
+            classifier.fit(x_train, y_train)
+            y_pred = classifier.predict(x_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            accuracies.append(accuracy)
+        x = np.arange(2)
+        plt.bar(x=x, height=accuracies)
+        plt.xticks(x, criteria)
+        plt.ylabel('accuracy')
+        plt.xlabel('split criteria')
+        plt.title('Dependence of accuracy on split criteria')
+        plt.show()
+        # максимальная глубина расщепления
+        max_depths = (1, 3, 5, 7, 9, 10, 15, 30, 100, 500)
+        accuracies = []
+        for max_depth in max_depths:
+            classifier = DecisionTreeClassifier(max_depth=max_depth)
+            classifier.fit(x_train, y_train)
+            y_pred = classifier.predict(x_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            accuracies.append(accuracy)
+        x = np.arange(len(max_depths))
+        plt.bar(x=x, height=accuracies)
+        plt.xticks(x, max_depths)
+        plt.ylabel('accuracy')
+        plt.xlabel('max split depth')
+        plt.title('Dependence of accuracy on max split depth')
+        plt.show()
+        # The minimum number of samples required to split an internal node
+        min_samples_splits = (2, 3, 4, 5, 7, 9, 10, 15, 30, 100, 500)
+        accuracies = []
+        for min_samples_split in min_samples_splits:
+            classifier = DecisionTreeClassifier(min_samples_split=min_samples_split)
+            classifier.fit(x_train, y_train)
+            y_pred = classifier.predict(x_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            accuracies.append(accuracy)
+        x = np.arange(len(min_samples_splits))
+        plt.bar(x=x, height=accuracies)
+        plt.xticks(x, min_samples_splits)
+        plt.ylabel('accuracy')
+        plt.xlabel('min samples splits')
+        plt.title('Dependence of accuracy on min samples splits')
+        plt.show()
+
+    def partB() -> None:
+        # пункт b
+        # max_depth=10  3, 5, 20
+        # min_samples_leaf=30  , 20, 40
+        max_depths = (3, 10, 20)
+        min_samples_leaves = (10, 30, 50)
+
+        x_train, x_test, y_train, y_test = train_test_split(datasets[1], targetDatasets[1], test_size=0.33)
+        for max_depth in max_depths:
+            classifier = DecisionTreeClassifier(max_depth=max_depth)
+            classifier.fit(x_train, y_train)
+            y_predicted = classifier.predict(x_test)
+            accuracy = accuracy_score(y_test, y_predicted)
+            # матрица ошибок
+            plot_confusion_matrix(classifier, x_test, y_test)
+            plt.title('Confusion matrix (accuracy = {}) \n '
+                      'max_depth={}'.format(accuracy, max_depth))
+            plt.show()
+            # ROС
+            plot_roc_curve(classifier, x_test, y_test)
+            plt.title('ROC curve \n '
+                      'max_depth={}'.format(max_depth))
+            plt.show()
+            # PR
+            plot_precision_recall_curve(classifier, x_test, y_test)
+            plt.title('PR curve \n '
+                      'max_depth={}'.format(max_depth))
+            plt.show()
+
+        for min_samples_leaf in min_samples_leaves:
+            classifier = DecisionTreeClassifier(min_samples_leaf=min_samples_leaf)
+            classifier.fit(x_train, y_train)
+            y_predicted = classifier.predict(x_test)
+            accuracy = accuracy_score(y_test, y_predicted)
+            # матрица ошибок
+            plot_confusion_matrix(classifier, x_test, y_test)
+            plt.title('Confusion matrix (accuracy = {}) \n '
+                      'min_samples_leaf={}'.format(accuracy, min_samples_leaf))
+            plt.show()
+            # ROС
+            plot_roc_curve(classifier, x_test, y_test)
+            plt.title('ROC curve \n '
+                      'min_samples_leaf={}'.format(min_samples_leaf))
+            plt.show()
+            # PR
+            plot_precision_recall_curve(classifier, x_test, y_test)
+            plt.title('PR curve \n '
+                      'min_samples_leaf={}'.format(min_samples_leaf))
+            plt.show()
+
+        classifier = DecisionTreeClassifier(max_depth=10, min_samples_leaf=30)
+        classifier.fit(x_train, y_train)
+        y_predicted = classifier.predict(x_test)
+        accuracy = accuracy_score(y_test, y_predicted)
+        # матрица ошибок
+        plot_confusion_matrix(classifier, x_test, y_test)
+        plt.title('Confusion matrix (accuracy = {})'.format(accuracy))
+        plt.show()
+        # ROС
+        plot_roc_curve(classifier, x_test, y_test)
+        plt.title('ROC curve')
+        plt.show()
+        # PR
+        plot_precision_recall_curve(classifier, x_test, y_test)
+        plt.title('PR curve')
+        plt.show()
+
+    chosenPart = part.lower()
+    if chosenPart == 'all':
+        partA()
+        partB()
+    elif chosenPart == 'a':
+        partA()
+    elif chosenPart == 'b':
+        partB()
+    else:
+        raise ValueError("This lab doesn't have part 5.{}. Parts a, b are available. To make all parts at "
+                         "one call use part='all'", chosenPart)
+
+
+def lab1_6(dataset: np.ndarray, targetDataset: np.ndarray, test: np.ndarray, testTarget: np.ndarray) -> None:
+    x_train, x_test, y_train, y_test = train_test_split(dataset, targetDataset, test_size=0.33)
+    # подбираем лучший параметр для DecisionTreeClassifier
+    # критерий оценки - точность, ROC и AUC
+    max_depths = (3, 7, 15)
+    for max_depth in max_depths:
+        classifier = DecisionTreeClassifier(max_depth=max_depth)
+        classifier.fit(x_train, y_train)
+        prediction = classifier.predict(x_test)
+        accuracy = accuracy_score(y_test, prediction)
+        # ROС
+        plot_roc_curve(classifier, x_test, y_test)
+        plt.title('ROC curve (accuracy = {}, max depth = {})'.format(accuracy, max_depth))
+        plt.show()
+    # для DecisionTreeClassifier лучший параметр max_depth = 7
+
+    # смотрим на GaussianNB
+    classifier = GaussianNB()
+    classifier.fit(x_train, y_train)
+    prediction = classifier.predict(x_test)
+    accuracy = accuracy_score(y_test, prediction)
+    # ROС
+    plot_roc_curve(classifier, x_test, y_test)
+    plt.title('ROC curve (accuracy = {})'.format(accuracy))
+    plt.show()
+
+    # проверяем два лучших варианта на тестовых данных
+    bestClassifiers = (DecisionTreeClassifier(max_depth=7), GaussianNB())
+    for bestClassifier in bestClassifiers:
+        bestClassifier.fit(x_train, y_train)
+        prediction = bestClassifier.predict(test)
+        accuracy = accuracy_score(testTarget, prediction)
+        # ROС
+        plot_roc_curve(bestClassifier, test, testTarget)
+        plt.title('ROC curve for best classifier (accuracy = {})'.format(accuracy))
+        plt.show()
+
+
 if __name__ == '__main__':
+    # Lab 1.1
     tick_tack_toe_txt = np.loadtxt('data/tic_tac_toe.txt', delimiter=',', dtype=str)
     tick_tack_toe_data, tick_tack_toe_target = makeDataAndTarget(tick_tack_toe_txt, dictionary={'positive': 1,
                                                                                                 'negative': -1,
@@ -425,6 +628,7 @@ if __name__ == '__main__':
     print('Lab1.1: spam')
     # lab1_1(spam_data, spam_target, 'spam.csv')
 
+    # Lab 1.2
     # Вариант	                        5
     # Матем. ожид. X1 (класс -1)	    14
     # Матем. ожид. X2 (класс -1)	    10
@@ -442,6 +646,7 @@ if __name__ == '__main__':
     print('Lab1.2:')
     # lab1_2(featuresClassMinus1, featuresClassPlus1)
 
+    # Lab 1.3
     glass_csv = np.loadtxt('data/glass.csv', delimiter=',', dtype=str)[1:, 1:]
     glassData, glassTarget = makeDataAndTarget(glass_csv, dictionary={'"1"': 1,
                                                                       '"2"': 2,
@@ -454,6 +659,7 @@ if __name__ == '__main__':
     print('Lab1.3:')
     # lab1_3(glassData, glassTarget, 'glass.csv')
 
+    # Lab 1.4
     svmdata = (np.loadtxt('data/svmdata_a.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
                np.loadtxt('data/svmdata_a_test.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
                np.loadtxt('data/svmdata_b.txt', dtype=str, delimiter='	', skiprows=1)[:, 1:],
@@ -467,4 +673,18 @@ if __name__ == '__main__':
     print('Lab1.4:')
     # lab1_4(svmdata, part='all')
 
-    print('Lab5:')
+    # Lab 1.5
+    print('Lab1.5:')
+    spam7_csv = np.loadtxt('data/spam7.csv', delimiter=',', dtype=str)[1:, :]
+    spam7_data, spam7_target = makeDataAndTarget(spam7_csv, dictionary={'"y"': 1,
+                                                                        '"n"': -1})
+    # lab1_5((glassData, spam7_data), (glassTarget, spam7_target), part='all')
+
+    # Lab 1.6
+    print('Lab1.6:')
+    bank_train = np.loadtxt('data/bank_scoring_train.csv', delimiter='	', dtype=float, skiprows=1)
+    bank_train_data, bank_train_target = bank_train[:, 1:], bank_train[:, 0]
+    bank_test = np.loadtxt('data/bank_scoring_test.csv', delimiter='	', dtype=float, skiprows=1)
+    bank_test_data, bank_test_target = bank_test[:, 1:], bank_test[:, 0]
+    lab1_6(bank_train_data, bank_train_target, bank_test_data, bank_test_target)
+    print()
