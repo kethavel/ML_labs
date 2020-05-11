@@ -50,12 +50,13 @@ def lab1_1(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
         gnb.fit(x_train, y_train)
         y_pred = gnb.predict(x_test)
         accuracy = accuracy_score(y_test, y_pred)
+        print('part of test data: {}, accuracy: {:.2f}'.format(testPercent, accuracy))
         listXPoints.append(testPercent)
         listYPoints.append(accuracy)
     plt.plot(listXPoints, listYPoints, scalex=False, scaley=False)
     plt.xlabel('Test data part out of a total amount')
-    plt.ylabel('Part of correct prediction')
-    plt.title('Accuracy of Bayes classifier for ' + dataName + ' (more is better)')
+    plt.ylabel('Part of correct predictions')
+    plt.title('Accuracy of Bayes classifier for ' + dataName)
     plt.show()
 
 
@@ -89,15 +90,15 @@ def lab1_2(featuresMinus1: np.ndarray, featuresPlus1: np.ndarray) -> None:
     print("accuracy = {}".format(accuracy_score(y_test, prediction)))
     # матрица ошибок
     plot_confusion_matrix(gnb, x_test, y_test)
-    plt.title('Confusion matrix')
+    plt.title('Confusion matrix (accuracy = {:.2f})'.format(accuracy_score(y_test, prediction)))
     plt.show()
     # ROС
     plot_roc_curve(gnb, x_test, y_test)
-    plt.title('ROC curve')
+    plt.title('ROC curve (accuracy = {:.2f})'.format(accuracy_score(y_test, prediction)))
     plt.show()
     # PR
     plot_precision_recall_curve(gnb, x_test, y_test)
-    plt.title('PR curve')
+    plt.title('PR curve (accuracy = {:.2f})'.format(accuracy_score(y_test, prediction)))
     plt.show()
 
 
@@ -123,12 +124,13 @@ def lab1_3(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
         classifier.fit(x_train, y_train)
         y_predicted = classifier.predict(x_test)
         accuracy = accuracy_score(y_test, y_predicted)
+        print('amount of neighbours: {}, accuracy: {:.2f}'.format(i, accuracy))
         listXPoints.append(i)
         listYPoints.append(accuracy)
     plt.plot(listXPoints, listYPoints, scaley=False)
     plt.xlabel('Amount of neighbors')
     plt.ylabel('Part of correct prediction')
-    plt.title('Accuracy of K Neighbors Classifier for ' + dataName + '(more is better)')
+    plt.title('Accuracy of K Neighbors Classifier for ' + dataName)
     plt.show()
 
     # точность в зависимости от метрики
@@ -140,14 +142,14 @@ def lab1_3(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
         classifier.fit(x_train, y_train)
         y_predicted = classifier.predict(x_test)
         accuracy = accuracy_score(y_test, y_predicted)
-        print('accuracy for {} metric: {}'.format(metric, accuracy))
+        print('accuracy for {} metric: {:.2f}'.format(metric, accuracy))
 
     classifier = KNeighborsClassifier(metric='minkowski', p=3)
     x_train, x_test, y_train, y_test = train_test_split(dataset, targetDataset, test_size=0.33)
     classifier.fit(x_train, y_train)
     y_predicted = classifier.predict(x_test)
     accuracy = accuracy_score(y_test, y_predicted)
-    print('accuracy for minkowski metric with p = 3: {}'.format(accuracy))
+    print('accuracy for minkowski metric with p = 3: {:.2f}'.format(accuracy))
 
     # определить тип стекла
     RI = 1.516
@@ -159,14 +161,14 @@ def lab1_3(dataset: np.ndarray, targetDataset: np.ndarray, dataName: str) -> Non
     Ca = 11.44
     Ba = 0.02
     Fe = 0.1
-    classifier = KNeighborsClassifier()
+    classifier = KNeighborsClassifier(metric='manhattan')
     x_train, x_test, y_train, y_test = train_test_split(dataset, targetDataset, test_size=0.33)
     classifier.fit(x_train, y_train)
     y_predicted = classifier.predict(x_test)
     accuracy = accuracy_score(y_test, y_predicted)
     unknownGlass = np.array([RI, Na, Mg, Al, Si, K, Ca, Ba, Fe], ndmin=2)
     prediction = classifier.predict(unknownGlass)
-    print('Unknown glass is {0[0]} class. Accuracy: {1}'.format(prediction, accuracy))
+    print('Unknown glass is {0[0]} class. Accuracy: {1:.2f}'.format(prediction, accuracy))
 
 
 def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
@@ -252,7 +254,7 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
         if accuracy is None:
             plt.title(title)
         else:
-            plt.title(title + '\n accuracy = {}'.format(accuracy))
+            plt.title(title + '\n accuracy = {:.2f}'.format(accuracy))
 
     def partA() -> None:
         """Пункт a"""
@@ -365,7 +367,7 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
         dataset = np.concatenate((x_train.copy(), x_test.copy()), axis=0)
         targetDataset = np.concatenate((y_train.copy(), y_test.copy()), axis=0)
         kernels = ('linear', 'sigmoid', 'rbf')
-        gammas = (0.1, 500)
+        gammas = (0.1, 5)
         for gamma in gammas:
             for kernel in kernels:
                 classifier = SVC(kernel=kernel, gamma=gamma)
@@ -384,6 +386,14 @@ def lab1_4(dataTuple: Tuple[np.ndarray, ...], part='all') -> None:
                 makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
                               'SVC with polynomial kernel (degree = {}, gamma = {}) '.format(degree, gamma), accuracy)
                 plt.show()
+
+        classifier = SVC(kernel='rbf', gamma=500)
+        classifier.fit(x_train, y_train)
+        y_predicted = classifier.predict(x_train)
+        accuracy = accuracy_score(y_train, y_predicted)
+        makePlotOfSVC(classifier, dataset[:, 0], dataset[:, 1], targetDataset,
+                      'SVC with {} kernel (overfitting) (gamma = {})'.format('rbf', 500), accuracy)
+        plt.show()
 
     if len(dataTuple) != 10:
         raise ValueError('dataTuple should contain 10 elements:a, a_test, b, b_test, c, c_test, d, d_test, e, e_test')
@@ -440,7 +450,7 @@ def lab1_5(datasets: Tuple[np.ndarray, np.ndarray], targetDatasets: Tuple[np.nda
         accuracy = accuracy_score(y_test, y_predicted)
         # вывод дерева
         plot_tree(classifier)
-        plt.title('Tree classifier (accuracy = {})'.format(accuracy))
+        plt.title('Tree classifier (accuracy = {:.2f})'.format(accuracy))
         plt.show()
         # зависимость точности от параметров
         # критерий расщепления
@@ -507,7 +517,7 @@ def lab1_5(datasets: Tuple[np.ndarray, np.ndarray], targetDatasets: Tuple[np.nda
             accuracy = accuracy_score(y_test, y_predicted)
             # матрица ошибок
             plot_confusion_matrix(classifier, x_test, y_test)
-            plt.title('Confusion matrix (accuracy = {}) \n '
+            plt.title('Confusion matrix (accuracy = {:.2f}) \n '
                       'max_depth={}'.format(accuracy, max_depth))
             plt.show()
             # ROС
@@ -528,7 +538,7 @@ def lab1_5(datasets: Tuple[np.ndarray, np.ndarray], targetDatasets: Tuple[np.nda
             accuracy = accuracy_score(y_test, y_predicted)
             # матрица ошибок
             plot_confusion_matrix(classifier, x_test, y_test)
-            plt.title('Confusion matrix (accuracy = {}) \n '
+            plt.title('Confusion matrix (accuracy = {:.2f}) \n '
                       'min_samples_leaf={}'.format(accuracy, min_samples_leaf))
             plt.show()
             # ROС
@@ -548,7 +558,7 @@ def lab1_5(datasets: Tuple[np.ndarray, np.ndarray], targetDatasets: Tuple[np.nda
         accuracy = accuracy_score(y_test, y_predicted)
         # матрица ошибок
         plot_confusion_matrix(classifier, x_test, y_test)
-        plt.title('Confusion matrix (accuracy = {})'.format(accuracy))
+        plt.title('Confusion matrix (accuracy = {:.2f})'.format(accuracy))
         plt.show()
         # ROС
         plot_roc_curve(classifier, x_test, y_test)
@@ -557,6 +567,10 @@ def lab1_5(datasets: Tuple[np.ndarray, np.ndarray], targetDatasets: Tuple[np.nda
         # PR
         plot_precision_recall_curve(classifier, x_test, y_test)
         plt.title('PR curve')
+        plt.show()
+        # вывод дерева
+        plot_tree(classifier)
+        plt.title('Optimal tree classifier (accuracy = {:.2f})'.format(accuracy))
         plt.show()
 
     chosenPart = part.lower()
@@ -573,6 +587,18 @@ def lab1_5(datasets: Tuple[np.ndarray, np.ndarray], targetDatasets: Tuple[np.nda
 
 
 def lab1_6(dataset: np.ndarray, targetDataset: np.ndarray, test: np.ndarray, testTarget: np.ndarray) -> None:
+    """Загрузите набор данных из файла bank_scoring_train.csv. Это набор финансовых данных, характеризующий
+    физических лиц. Целевым столбцом является «SeriousDlqin2yrs», означающий, ухудшится ли финансовая ситуация у
+    клиента. Постройте систему по принятию решения о выдаче или невыдаче кредита физическому лицу. Сделайте как
+    минимум 2 варианта системы на основе различных классификаторов. Подберите подходящую метрику качества работы
+    системы исходя из специфики задачи и определите, принятие решения какой системой сработало лучше на
+    bank_scoring_test.csv.
+
+    :param dataset: Набор исходных данных для обучения
+    :param targetDataset: Соответствующий набор классов
+    :param test: Набор данных для тестирования
+    :param testTarget: Соответствующий набор классов для тестирования
+    """
     x_train, x_test, y_train, y_test = train_test_split(dataset, targetDataset, test_size=0.33)
     # подбираем лучший параметр для DecisionTreeClassifier
     # критерий оценки - точность, ROC и AUC
@@ -584,7 +610,7 @@ def lab1_6(dataset: np.ndarray, targetDataset: np.ndarray, test: np.ndarray, tes
         accuracy = accuracy_score(y_test, prediction)
         # ROС
         plot_roc_curve(classifier, x_test, y_test)
-        plt.title('ROC curve (accuracy = {}, max depth = {})'.format(accuracy, max_depth))
+        plt.title('ROC curve (accuracy = {:.2f}, max depth = {})'.format(accuracy, max_depth))
         plt.show()
     # для DecisionTreeClassifier лучший параметр max_depth = 7
 
@@ -595,7 +621,7 @@ def lab1_6(dataset: np.ndarray, targetDataset: np.ndarray, test: np.ndarray, tes
     accuracy = accuracy_score(y_test, prediction)
     # ROС
     plot_roc_curve(classifier, x_test, y_test)
-    plt.title('ROC curve (accuracy = {})'.format(accuracy))
+    plt.title('ROC curve (accuracy = {:.2f})'.format(accuracy))
     plt.show()
 
     # проверяем два лучших варианта на тестовых данных
@@ -606,7 +632,7 @@ def lab1_6(dataset: np.ndarray, targetDataset: np.ndarray, test: np.ndarray, tes
         accuracy = accuracy_score(testTarget, prediction)
         # ROС
         plot_roc_curve(bestClassifier, test, testTarget)
-        plt.title('ROC curve for best classifier (accuracy = {})'.format(accuracy))
+        plt.title('ROC curve for best classifier (accuracy = {:.2f})'.format(accuracy))
         plt.show()
 
 
@@ -681,10 +707,9 @@ if __name__ == '__main__':
     # lab1_5((glassData, spam7_data), (glassTarget, spam7_target), part='all')
 
     # Lab 1.6
-    print('Lab1.6:')
     bank_train = np.loadtxt('data/bank_scoring_train.csv', delimiter='	', dtype=float, skiprows=1)
     bank_train_data, bank_train_target = bank_train[:, 1:], bank_train[:, 0]
     bank_test = np.loadtxt('data/bank_scoring_test.csv', delimiter='	', dtype=float, skiprows=1)
     bank_test_data, bank_test_target = bank_test[:, 1:], bank_test[:, 0]
-    lab1_6(bank_train_data, bank_train_target, bank_test_data, bank_test_target)
-    print()
+    print('Lab1.6:')
+    # lab1_6(bank_train_data, bank_train_target, bank_test_data, bank_test_target)
